@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { pool } from './db.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { pool, initDatabase } from './db.js';
 
 dotenv.config();
 
@@ -10,6 +12,15 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Definir __dirname para ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Inicializar DB al arrancar
+initDatabase().catch(err => {
+  console.error("Fallo crítico inicializando la DB:", err);
+});
 
 // --- HELPERS ---
 
@@ -184,6 +195,15 @@ app.get('/api/rankings/:type', async (req, res) => {
   }
 });
 
+// --- SERVIR FRONTEND EN PRODUCCIÓN ---
+// El servidor corre desde server/dist, el frontend está en /dist (raíz)
+const frontendPath = path.join(__dirname, '../../dist');
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`Servidor Artemis II corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor Artemis II corriendo en el puerto ${PORT}`);
 });
