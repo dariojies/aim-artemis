@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMemoriaSync } from './useMemoriaSync';
-import { Settings, Play, RefreshCcw } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 type Mode = 'Satelite' | 'Nave';
 type Difficulty = 'fácil' | 'difícil';
