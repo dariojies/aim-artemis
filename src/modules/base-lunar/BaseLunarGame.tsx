@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Search, User } from 'lucide-react';
+import { Activity, User } from 'lucide-react';
 import { artemisApi } from '../../services/api';
 import { useAuth } from '../../core/AuthContext';
 

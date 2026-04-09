@@ -4,10 +4,31 @@ import { useMemoriaSync } from './useMemoriaSync';
 export function ReceptorView() {
   const { gameState, winGame } = useMemoriaSync();
   const [elapsedTime, setElapsedTime] = useState('00:00');
-  const [userInput, setUserInput] = useState<number[]>([]);
-  const [errorFlash, setErrorFlash] = useState(false);
+  const [userInputValues, setUserInputValues] = useState<string[]>([]);
+  const [validatedCells, setValidatedCells] = useState<boolean[]>([]);
+  const [errorCellIndex, setErrorCellIndex] = useState<number | null>(null);
 
-  // Efecto del cronómetro visual
+  // Determinar cuántas cifras tiene cada celda
+  const getRequiredDigits = () => {
+    if (gameState.difficulty.includes('Satelite')) {
+      return gameState.difficulty.includes('fácil') ? 2 : 3;
+    } else {
+      return gameState.difficulty.includes('fácil') ? 3 : 4;
+    }
+  };
+
+  const requiredDigits = getRequiredDigits();
+
+  // Resetear estados locales al empezar nueva partida
+  useEffect(() => {
+    if (gameState.isActive) {
+      setUserInputValues(new Array(gameState.sequence.length).fill(''));
+      setValidatedCells(new Array(gameState.sequence.length).fill(false));
+      setErrorCellIndex(null);
+    }
+  }, [gameState.isActive, gameState.sequence.length]);
+
+  // Cronómetro
   useEffect(() => {
     let interval: number;
     if (gameState.isActive && gameState.startTime) {
@@ -24,121 +45,110 @@ export function ReceptorView() {
       setElapsedTime(`${mins}:${secs}`);
     } else {
       setElapsedTime('00:00');
-      setUserInput([]); // Reset custom state if game is reset
     }
     return () => clearInterval(interval);
-  }, [gameState]);
+  }, [gameState.isActive, gameState.isWon, gameState.startTime, gameState.endTime]);
 
-  const handleNumpadClick = (num: number) => {
-    if (!gameState.isActive || gameState.isWon) return;
+  const handleInputChange = (index: number, val: string) => {
+    if (validatedCells[index] || gameState.isWon || !gameState.isActive) return;
 
-    const currentLength = userInput.length;
-    // Comprobar si el número tocado coincide con la secuencia en la posición actual
-    if (gameState.sequence[currentLength] === num) {
-      const newInput = [...userInput, num];
-      setUserInput(newInput);
-      
-      // Si ya llenó la longitud total de la secuencia generada (5)
-      if (newInput.length === gameState.sequence.length) {
-        winGame();
+    // Solo números
+    const numericVal = val.replace(/\D/g, '').slice(0, requiredDigits);
+    
+    const nextValues = [...userInputValues];
+    nextValues[index] = numericVal;
+    setUserInputValues(nextValues);
+
+    // Si ya completó las cifras requeridas, validar
+    if (numericVal.length === requiredDigits) {
+      if (numericVal === gameState.sequence[index]) {
+        const nextValidated = [...validatedCells];
+        nextValidated[index] = true;
+        setValidatedCells(nextValidated);
+        
+        // Comprobar victoria total
+        if (nextValidated.every(v => v === true)) {
+          winGame();
+        }
+      } else {
+        // ERROR: Flash rojo y limpiar
+        setErrorCellIndex(index);
+        setTimeout(() => {
+          setErrorCellIndex(null);
+          const clearedValues = [...nextValues];
+          clearedValues[index] = '';
+          setUserInputValues(clearedValues);
+        }, 500);
       }
-    } else {
-      // Si se equivoca, error animado y resetea su input para empezar de 0
-      setErrorFlash(true);
-      setTimeout(() => setErrorFlash(false), 500);
-      setUserInput([]);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', padding: '16px', transition: 'background-color 0.2s', backgroundColor: errorFlash ? '#b33939' : 'transparent', borderRadius: '16px' }}>
-      <h2 style={{ fontSize: '2rem', margin: 0, color: 'var(--cartoon-white)' }}>Estación Receptora</h2>
-      
-      {/* Estado */}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', padding: '16px' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '4px', color: 'var(--cartoon-white)' }}>
+          Receptor: {gameState.difficulty}
+        </h2>
+        <div style={{ fontSize: '3rem', fontWeight: 'bold', color: gameState.isWon ? '#1F6A40' : 'var(--artemis-orange)', fontFamily: 'monospace' }}>
+          {elapsedTime}
+        </div>
+      </div>
+
       {!gameState.isActive && !gameState.isWon && (
-        <div style={{ padding: '32px', border: '4px dashed var(--cartoon-outline)', borderRadius: '16px', backgroundColor: 'var(--space-medium)' }}>
-          <p style={{ margin: 0, fontSize: '1.5rem', opacity: 0.8 }} className="pulsing-text">Esperando transmisión del Visualizador...</p>
+        <div style={{ padding: '40px', border: '4px dashed var(--cartoon-outline)', borderRadius: '24px', backgroundColor: 'var(--space-medium)', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: '1.5rem', opacity: 0.8 }} className="pulsing-text">
+            📡 Esperando coordenadas del Visualizador...
+          </p>
         </div>
       )}
 
-      {/* Cronómetro */}
-      <div style={{
-        fontSize: '4rem',
-        fontWeight: 'bold',
-        color: gameState.isWon ? '#1F6A40' : 'var(--artemis-orange)',
-        fontFamily: 'monospace',
-        textShadow: '2px 2px 0px rgba(0,0,0,0.5)'
-      }}>
-        {elapsedTime}
-      </div>
-
       {(gameState.isActive || gameState.isWon) && (
-        <>
-          {/* Display de input o "_" */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            padding: '16px',
-            backgroundColor: gameState.isWon ? '#1F6A40' : 'var(--space-light)',
-            borderRadius: '16px',
-            border: '4px solid var(--cartoon-outline)'
-          }}>
-            {[...Array(5)].map((_, i) => (
-              <div key={i} style={{
-                width: '48px',
-                height: '64px',
-                backgroundColor: 'var(--space-dark)',
-                color: 'var(--cartoon-white)',
-                fontSize: '2.5rem',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                border: '2px solid var(--cartoon-outline)'
-              }}>
-                {userInput[i] !== undefined ? userInput[i] : '_'}
-              </div>
-            ))}
-          </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${gameState.gridSize}, 1fr)`,
+          gap: '12px',
+          padding: '20px',
+          backgroundColor: 'var(--space-medium)',
+          borderRadius: '20px',
+          border: '4px solid var(--cartoon-outline)',
+        }}>
+          {gameState.sequence.map((_, i) => {
+            const isCorrect = validatedCells[i];
+            const isError = errorCellIndex === i;
+            
+            return (
+              <input
+                key={i}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={userInputValues[i] || ''}
+                readOnly={isCorrect || gameState.isWon}
+                onChange={(e) => handleInputChange(i, e.target.value)}
+                placeholder={'?'.repeat(requiredDigits)}
+                style={{
+                  width: gameState.gridSize === 5 ? '60px' : '80px',
+                  height: gameState.gridSize === 5 ? '60px' : '80px',
+                  backgroundColor: isCorrect ? '#1F6A40' : (isError ? '#b33939' : 'var(--cartoon-white)'),
+                  color: isCorrect || isError ? 'white' : 'var(--space-dark)',
+                  fontSize: gameState.gridSize === 5 ? '1.5rem' : '2rem',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  borderRadius: '12px',
+                  border: `3px solid ${isCorrect ? 'white' : 'var(--space-dark)'}`,
+                  outline: 'none',
+                  transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
 
-          {!gameState.isWon && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '16px',
-              maxWidth: '300px',
-              width: '100%'
-            }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                <button
-                  key={num}
-                  className="btn-cartoon"
-                  onClick={() => handleNumpadClick(num)}
-                  style={{ fontSize: '2rem', padding: '16px 0', backgroundColor: '#005C8A' }}
-                >
-                  {num}
-                </button>
-              ))}
-              {/* Botones dummy e cero */}
-              <div />
-              <button
-                className="btn-cartoon"
-                onClick={() => handleNumpadClick(0)}
-                style={{ fontSize: '2rem', padding: '16px 0', backgroundColor: '#005C8A' }}
-              >
-                0
-              </button>
-              <div />
-            </div>
-          )}
-
-          {gameState.isWon && (
-            <div style={{ textAlign: 'center', color: '#1F6A40' }}>
-              <h3 style={{ fontSize: '2.5rem', margin: 0, textShadow: '2px 2px 0px black' }}>¡Sincronizado!</h3>
-            </div>
-          )}
-        </>
+      {gameState.isWon && (
+        <div className="fade-in" style={{ textAlign: 'center', color: '#1F6A40' }}>
+          <h3 style={{ fontSize: '2.5rem', margin: 0, textShadow: '2px 2px 0px black' }}>🚀 ¡CONEXIÓN ESTABLECIDA!</h3>
+        </div>
       )}
     </div>
   );

@@ -4,14 +4,16 @@ import { artemisApi } from '../../services/api';
 
 // Tipos de mensajes que enviaremos a través del canal
 type MemoriaMessage = 
-  | { type: 'START_GAME'; payload: { sequence: number[], startTime: number } }
+  | { type: 'START_GAME'; payload: { sequence: string[], gridSize: number, difficulty: string, startTime: number } }
   | { type: 'WIN_GAME'; payload: { endTime: number } }
   | { type: 'RESET_GAME' }
   | { type: 'PING' };
 
 export interface MemoriaGameState {
   isActive: boolean;
-  sequence: number[];
+  sequence: string[];
+  gridSize: number;
+  difficulty: string;
   startTime: number | null;
   endTime: number | null;
   isWon: boolean;
@@ -24,6 +26,8 @@ export function useMemoriaSync() {
   const [gameState, setGameState] = useState<MemoriaGameState>({
     isActive: false,
     sequence: [],
+    gridSize: 3,
+    difficulty: 'fácil',
     startTime: null,
     endTime: null,
     isWon: false
@@ -43,6 +47,8 @@ export function useMemoriaSync() {
           setGameState({
             isActive: true,
             sequence: data.payload.sequence,
+            gridSize: data.payload.gridSize,
+            difficulty: data.payload.difficulty,
             startTime: data.payload.startTime,
             endTime: null,
             isWon: false
@@ -60,6 +66,8 @@ export function useMemoriaSync() {
           setGameState({
             isActive: false,
             sequence: [],
+            gridSize: 3,
+            difficulty: 'fácil',
             startTime: null,
             endTime: null,
             isWon: false
@@ -73,14 +81,16 @@ export function useMemoriaSync() {
     };
   }, []);
 
-  const startGame = useCallback((sequence: number[]) => {
+  const startGame = useCallback((sequence: string[], gridSize: number, difficulty: string) => {
     if (!channel) return;
     const startTime = Date.now();
-    const payload = { sequence, startTime };
+    const payload = { sequence, gridSize, difficulty, startTime };
     channel.postMessage({ type: 'START_GAME', payload });
     setGameState({
       isActive: true,
       sequence,
+      gridSize,
+      difficulty,
       startTime,
       endTime: null,
       isWon: false
@@ -116,6 +126,8 @@ export function useMemoriaSync() {
     setGameState({
       isActive: false,
       sequence: [],
+      gridSize: 3,
+      difficulty: 'fácil',
       startTime: null,
       endTime: null,
       isWon: false

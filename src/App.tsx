@@ -1,3 +1,5 @@
+import React from 'react';
+import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './core/AuthContext';
 import { Layout } from './components/Layout';
@@ -9,7 +11,7 @@ import { BaseLunarGame } from './modules/base-lunar/BaseLunarGame';
 import { RumboLunaGame } from './modules/rumbo-luna/RumboLunaGame';
 
 // Wrapper para proteger rutas Superadmin
-function RequireSuperadmin({ children }: { children: JSX.Element }) {
+function RequireSuperadmin({ children }: { children: ReactNode }) {
   const { role } = useAuth();
   if (role !== 'superadmin') {
     return <Navigate to="/profile" replace />;
@@ -18,7 +20,7 @@ function RequireSuperadmin({ children }: { children: JSX.Element }) {
 }
 
 // Wrapper para proteger rutas de Usuario logueado (Cualquiera)
-function RequireAuth({ children }: { children: JSX.Element }) {
+function RequireAuth({ children }: { children: ReactNode }) {
   const { role } = useAuth();
   if (role === 'guest') {
     return <Navigate to="/" replace />;
