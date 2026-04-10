@@ -21,13 +21,28 @@ export async function initDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS artemis_users (
         id SERIAL PRIMARY KEY,
-        user_id UUID, -- Referencia a la tabla global 'users' si coincide email
+        user_id UUID,
         astronaut_number VARCHAR(4) UNIQUE NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE,
         full_name VARCHAR(255),
         phone_number VARCHAR(20),
         registration_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Migración manual: Asegurar que existan las nuevas columnas si la tabla ya existía
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='artemis_users' AND column_name='email') THEN
+          ALTER TABLE artemis_users ADD COLUMN email VARCHAR(255) UNIQUE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='artemis_users' AND column_name='full_name') THEN
+          ALTER TABLE artemis_users ADD COLUMN full_name VARCHAR(255);
+        END IF;
+        -- Hacer que phone_number sea opcional si no lo era
+        ALTER TABLE artemis_users ALTER COLUMN phone_number DROP NOT NULL;
+      END $$;
     `);
 
     // 2. Módulo 1: Misión Memoria
