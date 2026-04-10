@@ -78,8 +78,8 @@ export function Menu() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '24px',
-            padding: '24px',
+            gap: '20px',
+            padding: '16px 20px',
             backgroundColor: module.color,
             border: 'var(--border-width-cartoon) solid var(--cartoon-outline)',
             borderRadius: 'var(--radius-card)',
@@ -88,6 +88,7 @@ export function Menu() {
             cursor: 'pointer',
             textAlign: 'left',
             transition: 'transform 0.1s ease',
+            width: '100%'
           }}
           onMouseDown={(e) => {
             e.currentTarget.style.transform = 'translateY(4px)';
@@ -104,15 +105,16 @@ export function Menu() {
         >
           <div style={{
             backgroundColor: 'rgba(255,255,255,0.2)',
-            padding: '16px',
+            padding: '12px',
             borderRadius: '50%',
-            border: '2px solid var(--cartoon-outline)'
+            border: '2px solid var(--cartoon-outline)',
+            flexShrink: 0
           }}>
             {module.icon}
           </div>
           <div>
-            <h2 style={{ fontSize: '1.8rem', margin: '0 0 8px 0' }}>{module.title}</h2>
-            <p style={{ fontSize: '1.1rem', margin: 0, opacity: 0.9 }}>{module.description}</p>
+            <h2 style={{ fontSize: '1.4rem', margin: '0 0 4px 0' }}>{module.title}</h2>
+            <p style={{ fontSize: '1rem', margin: 0, opacity: 0.9 }}>{module.description}</p>
           </div>
         </button>
       ))}

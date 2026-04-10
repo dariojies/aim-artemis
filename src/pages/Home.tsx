@@ -69,11 +69,12 @@ export function Home() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      height: '100%',
-      gap: '32px'
+      minHeight: '100%',
+      gap: '24px',
+      padding: '24px 0'
     }}>
-      <div style={{ textAlign: 'center' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '8px', color: 'var(--cartoon-white)' }}>
+      <div style={{ textAlign: 'center', padding: '0 20px' }}>
+        <h1 style={{ fontSize: 'clamp(2rem, 8vw, 3rem)', marginBottom: '8px', color: 'var(--cartoon-white)' }}>
           Preparación <span style={{ color: 'var(--artemis-orange)' }}>Artemis</span>
         </h1>
         {isIdentifying ? (
@@ -81,7 +82,7 @@ export function Home() {
             Identificando Identidad Digital...
           </p>
         ) : (
-          <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
+          <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>
             Escanea el QR e inicia sesión con Google para comenzar.
           </p>
         )}

@@ -35,19 +35,17 @@
 }
 
 html, body {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden; /* Evita scroll elástico o rebote en iOS/Android */
+  width: 100%;
+  min-height: 100%;
   background-color: var(--space-dark);
   color: var(--cartoon-white);
   font-family: var(--font-primary);
+  overflow-x: hidden;
   
   /* Reglas Críticas para Múltiples Plataformas Táctiles */
-  touch-action: manipulation;        /* Bloquea double-tap to zoom */
-  -webkit-text-size-adjust: 100%;    /* Bloquea ajuste de texto en rotación IOS */
-  user-select: none;                 /* Evita seleccionar texto por error */
-  -webkit-user-select: none;         
-  -webkit-tap-highlight-color: transparent; /* Quita el overlay azul estandar al tocar */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
@@ -116,11 +114,26 @@ html, body {
 @media (max-width: 900px) {
   .dashboard-layout {
     flex-direction: column;
+    padding: 12px;
   }
   .dashboard-main, .dashboard-sidebar {
-    flex: 1 1 auto;
     width: 100%;
+    flex: none;
   }
+}
+
+@media (max-width: 600px) {
+  .btn-cartoon {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+  
+  h1 { font-size: 1.8rem !important; }
+  h2 { font-size: 1.4rem !important; }
+  h3 { font-size: 1.2rem !important; }
+
+  /* Ajustar el padding global del contenedor principal */
+  main { padding: 12px !important; }
 }
 
 @keyframes pulse-soft {
