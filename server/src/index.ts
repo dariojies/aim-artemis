@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = (process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '').trim();
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 if (!GOOGLE_CLIENT_ID) {
@@ -98,9 +98,9 @@ app.post('/api/auth/google', async (req, res) => {
       ...artemisUser,
       role
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error validando Google Token:", err);
-    res.status(500).json({ error: 'Error de autenticación con Google' });
+    res.status(500).json({ error: `Error de autenticación con Google: ${err.message}` });
   }
 });
 
