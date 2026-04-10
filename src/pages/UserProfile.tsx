@@ -3,7 +3,7 @@ import { RocketProgress } from '../components/visuals/RocketProgress';
 import { LunarBaseLights } from '../components/visuals/LunarBaseLights';
 import { RankingSidebar } from '../components/RankingSidebar';
 import { artemisApi } from '../services/api';
-import { Star, Zap, User, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 

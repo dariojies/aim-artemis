@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { QrCode, ShieldAlert } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import { useAuth } from '../core/AuthContext';
 import { useEffect, useState } from 'react';
 import { artemisApi } from '../services/api';
