@@ -20,7 +20,7 @@ export function Home() {
   // Si venimos del QR con ?auto=true, empezamos en modo identificando
   const isAuto = params.get('auto') === 'true';
 
-  const [currentUrl, setCurrentUrl] = useState(() => {
+  const [currentUrl] = useState(() => {
     const url = new URL(window.location.origin);
     url.searchParams.set('auto', 'true');
     return url.toString();
