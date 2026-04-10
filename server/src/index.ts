@@ -10,8 +10,12 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+if (!GOOGLE_CLIENT_ID) {
+  console.warn("ADVERTENCIA: No se ha configurado GOOGLE_CLIENT_ID. El login de Google fallará.");
+}
 app.use(cors());
 app.use(express.json());
 

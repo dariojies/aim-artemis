@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { QrCode } from 'lucide-react';
+import { QrCode, ShieldAlert } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAuth } from '../core/AuthContext';
 import { useEffect, useState } from 'react';
@@ -43,10 +43,11 @@ export function Home() {
       setIsIdentifying(true);
       try {
         const user = await artemisApi.loginWithGoogle(response.credential);
+        if (user.error) throw new Error(user.error);
         login(user.role || 'user', user.user_id || user.id, user.id, user.astronaut_number);
-      } catch (e) {
-        console.error("Error en login Google", e);
-        alert("Error al identificar Astronauta. Inténtalo de nuevo.");
+      } catch (e: any) {
+        console.error("Error en login Google:", e);
+        alert(`Error al identificar Astronauta: ${e.message || 'Inténtalo de nuevo.'}`);
       } finally {
         setIsIdentifying(false);
       }
@@ -118,6 +119,34 @@ export function Home() {
       <p style={{ fontSize: '0.9rem', opacity: 0.6, maxWidth: '300px', textAlign: 'center' }}>
         Tus datos de misión se guardarán automáticamente en tu cuenta al completar el despliegue.
       </p>
+
+      {/* Botón flotante para Staff/Admin */}
+      <button
+        onClick={() => {
+          if (window.google) window.google.accounts.id.prompt();
+          else alert("Inicia sesión con el selector de Google de arriba.");
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          backgroundColor: 'var(--artemis-orange)',
+          border: '3px solid var(--cartoon-outline)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          cursor: 'pointer',
+          zIndex: 1000
+        }}
+        title="Acceso Staff / Administrador"
+      >
+        <ShieldAlert size={28} />
+      </button>
     </div>
   );
 }
