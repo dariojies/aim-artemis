@@ -1,10 +1,18 @@
 import { useNavigate } from 'react-router-dom';
-import { Brain, Activity, Rocket } from 'lucide-react';
+import { Brain, Activity, Rocket, LogOut } from 'lucide-react';
+import { useAuth } from '../core/AuthContext';
 
 export function Menu() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const gameModules = [
+    // ...
     {
       id: 'memoria',
       title: 'Misión Memoria',
@@ -38,8 +46,26 @@ export function Menu() {
       gap: '24px',
       maxWidth: '600px',
       margin: '0 auto',
-      paddingBottom: '40px'
+      paddingBottom: '40px',
+      position: 'relative'
     }}>
+      <button 
+        onClick={handleLogout}
+        style={{
+          position: 'absolute',
+          top: '0',
+          right: '0',
+          background: 'none',
+          border: 'none',
+          color: 'var(--artemis-orange)',
+          cursor: 'pointer',
+          padding: '10px'
+        }}
+        title="Cerrar Sesión"
+      >
+        <LogOut size={24} />
+      </button>
+
       <div style={{ textAlign: 'center', marginBottom: '16px' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Módulos de Entrenamiento</h1>
         <p style={{ opacity: 0.8 }}>Selecciona la estación física en la que te encuentras.</p>

@@ -1,34 +1,57 @@
 import { useNavigate } from 'react-router-dom';
-import { QrCode, ShieldAlert, User, Phone } from 'lucide-react';
+import { QrCode, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../core/AuthContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { artemisApi } from '../services/api';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 export function Home() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { login, role } = useAuth();
+  const [isIdentifying, setIsIdentifying] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone) return;
-    setLoading(true);
-    try {
-      const user = await artemisApi.register(phone);
-      login('user', user.user_id || user.id, user.id, user.astronaut_number);
-      navigate('/profile');
-    } catch (e) {
-      alert("Error al acceder. Inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Redirección automática si ya está logueado
+  useEffect(() => {
+    if (role === 'superadmin') navigate('/menu');
+    else if (role === 'user') navigate('/profile');
+  }, [role, navigate]);
 
-  const handleSimulateAdmin = () => {
-    login('superadmin', '0001'); // Admin bypass para tests
-    navigate('/menu');
-  };
+  useEffect(() => {
+    // Inicializar Google One Tap
+    const initializeGoogle = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: true // Intento de login automático si ya eligió cuenta antes
+        });
+        
+        window.google.accounts.id.prompt(); // Mostrar el One Tap
+      }
+    };
+
+    const handleCredentialResponse = async (response: any) => {
+      setIsIdentifying(true);
+      try {
+        const user = await artemisApi.loginWithGoogle(response.credential);
+        login(user.role || 'user', user.user_id || user.id, user.id, user.astronaut_number);
+      } catch (e) {
+        console.error("Error en login Google", e);
+        alert("Error al identificar Astronauta. Inténtalo de nuevo.");
+      } finally {
+        setIsIdentifying(false);
+      }
+    };
+
+    // Pequeño delay para asegurar que el script de Google cargó
+    const timer = setTimeout(initializeGoogle, 1000);
+    return () => clearTimeout(timer);
+  }, [login]);
 
   return (
     <div style={{
@@ -43,9 +66,15 @@ export function Home() {
         <h1 style={{ fontSize: '3rem', marginBottom: '8px', color: 'var(--cartoon-white)' }}>
           Preparación <span style={{ color: 'var(--artemis-orange)' }}>Artemis</span>
         </h1>
-        <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
-          Por favor, escanea tu Identificador (QR) para comenzar.
-        </p>
+        {isIdentifying ? (
+          <p style={{ fontSize: '1.2rem', color: 'var(--artemis-orange)', fontWeight: 'bold' }} className="animate-pulse">
+            Identificando Identidad Digital...
+          </p>
+        ) : (
+          <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
+            Escanea el QR e inicia sesión con Google para comenzar.
+          </p>
+        )}
       </div>
 
       <div style={{
@@ -54,57 +83,24 @@ export function Home() {
         backgroundColor: 'var(--space-light)',
         border: '6px dashed var(--cartoon-outline)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '24px'
+        borderRadius: '24px',
+        gap: '16px'
       }}>
         <QrCode size={100} color="var(--cartoon-white)" opacity={0.5} />
+        {isIdentifying && <span>Buscando...</span>}
       </div>
 
-      <form 
-        onSubmit={handleRegister}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '320px' }}
-      >
-        <div style={{ position: 'relative' }}>
-          <Phone size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-          <input 
-            type="tel"
-            placeholder="Tu Teléfono (ej: 600000000)"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 12px 12px 40px',
-              borderRadius: '12px',
-              border: '3px solid var(--cartoon-outline)',
-              fontSize: '1.1rem',
-              outline: 'none'
-            }}
-            required
-          />
-        </div>
+      {/* Botón de respaldo por si el One Tap no sale automáticamente */}
+      <div id="google-login-btn" style={{ minHeight: '40px' }}></div>
 
-        <button 
-          type="submit"
-          className="btn-cartoon" 
-          disabled={loading}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: '#4B3F72' }}
-        >
-          <User size={24} /> {loading ? 'Accediendo...' : 'Comenzar Aventura'}
-        </button>
+      <div style={{ borderTop: '2px dashed var(--cartoon-outline)', width: '100%', maxWidth: '300px' }} />
 
-        <div style={{ borderTop: '2px dashed var(--cartoon-outline)', margin: '8px 0' }} />
-
-        <button 
-          type="button"
-          className="btn-cartoon" 
-          onClick={handleSimulateAdmin}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', padding: '12px' }}
-        >
-          <ShieldAlert size={24} /> Modo Estación (Staff)
-        </button>
-      </form>
-
+      <p style={{ fontSize: '0.9rem', opacity: 0.6, maxWidth: '300px', textAlign: 'center' }}>
+        Tus datos de misión se guardarán automáticamente en tu cuenta al completar el despliegue.
+      </p>
     </div>
   );
 }

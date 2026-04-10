@@ -21,9 +21,11 @@ export async function initDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS artemis_users (
         id SERIAL PRIMARY KEY,
-        user_id UUID, -- Opcional: Referencia a la tabla global 'users'
-        astronaut_number VARCHAR(4) UNIQUE NOT NULL, -- "0000" a "9999"
-        phone_number VARCHAR(20) NOT NULL,
+        user_id UUID, -- Referencia a la tabla global 'users' si coincide email
+        astronaut_number VARCHAR(4) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        full_name VARCHAR(255),
+        phone_number VARCHAR(20),
         registration_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);

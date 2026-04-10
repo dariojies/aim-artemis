@@ -14,16 +14,27 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<UserRole>('guest');
-  const [userId, setUserId] = useState<string | null>(null);
-  const [artemisUserId, setArtemisUserId] = useState<number | null>(null);
-  const [astronautNumber, setAstronautNumber] = useState<string | null>(null);
+  const [role, setRole] = useState<UserRole>(() => (localStorage.getItem('artemis_role') as UserRole) || 'guest');
+  const [userId, setUserId] = useState<string | null>(() => localStorage.getItem('artemis_userId'));
+  const [artemisUserId, setArtemisUserId] = useState<number | null>(() => {
+    const val = localStorage.getItem('artemis_artemisId');
+    return val ? parseInt(val) : null;
+  });
+  const [astronautNumber, setAstronautNumber] = useState<string | null>(() => localStorage.getItem('artemis_astroNum'));
 
   const login = (newRole: UserRole, id: string, artemisId?: number, astroNum?: string) => {
     setRole(newRole);
     setUserId(id);
-    if (artemisId) setArtemisUserId(artemisId);
-    if (astroNum) setAstronautNumber(astroNum);
+    localStorage.setItem('artemis_role', newRole);
+    localStorage.setItem('artemis_userId', id);
+    if (artemisId) {
+      setArtemisUserId(artemisId);
+      localStorage.setItem('artemis_artemisId', artemisId.toString());
+    }
+    if (astroNum) {
+      setAstronautNumber(astroNum);
+      localStorage.setItem('artemis_astroNum', astroNum);
+    }
   };
 
   const logout = () => {
@@ -31,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserId(null);
     setArtemisUserId(null);
     setAstronautNumber(null);
+    localStorage.clear();
   };
 
   return (

@@ -3,11 +3,13 @@ import { RocketProgress } from '../components/visuals/RocketProgress';
 import { LunarBaseLights } from '../components/visuals/LunarBaseLights';
 import { RankingSidebar } from '../components/RankingSidebar';
 import { artemisApi } from '../services/api';
-import { Star, Zap } from 'lucide-react';
+import { Star, Zap, User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function UserProfile() {
-  const { userId } = useAuth();
+  const { astronautNumber, logout } = useAuth();
+  const navigate = useNavigate();
   
   // Datos mockeados y dinámicos para la vista
   const [energySeconds, setEnergySeconds] = useState(0); 
@@ -30,11 +32,15 @@ export function UserProfile() {
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 5000); // Actualizar cada 5s
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Formateador Helper (Segundos a HH:MM:SS)
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -45,52 +51,60 @@ export function UserProfile() {
   return (
     <div className="dashboard-layout">
       <div className="dashboard-main">
-        {/* Tarjeta de Progreso Personal */}
+        
       <section style={{
-        backgroundColor: 'var(--space-light)',
-        padding: '16px',
-        borderRadius: 'var(--radius-card)',
-        border: 'var(--border-width-cartoon) solid var(--cartoon-outline)',
-        boxShadow: '4px 6px 0px var(--cartoon-outline)',
+        backgroundColor: 'var(--space-medium)',
+        padding: '32px',
+        borderRadius: '24px',
+        border: '4px solid var(--cartoon-outline)',
         textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        flexWrap: 'wrap',
-        gap: '16px'
+        position: 'relative',
+        marginBottom: '24px'
       }}>
-        <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--cartoon-white)' }}>
-          Astronauta #{userId}
-        </h2>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', backgroundColor: '#005C8A', borderRadius: '50%', border: '2px solid black' }}>
-              <Star fill="white" size={24} />
-            </div>
-            <p style={{ fontWeight: 'bold', margin:0, fontSize: '1.1rem' }}>12 km</p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', backgroundColor: '#1F6A40', borderRadius: '50%', border: '2px solid black' }}>
-              <Zap fill="white" size={24} />
-            </div>
-            <p style={{ fontWeight: 'bold', margin:0, fontSize: '1.1rem' }}>150 ⚡</p>
-          </div>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          backgroundColor: 'var(--artemis-orange)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 16px',
+          border: '4px solid var(--cartoon-outline)'
+        }}>
+          <User size={40} color="white" />
         </div>
+        
+        <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Astronauta #{astronautNumber}</h2>
+        <p style={{ opacity: 0.7 }}>Misión Artemis II en ejecución</p>
+
+        <button 
+          onClick={handleLogout}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'none',
+            border: 'none',
+            color: 'var(--artemis-orange)',
+            cursor: 'pointer'
+          }}
+          title="Cerrar Sesión"
+        >
+          <LogOut size={24} />
+        </button>
       </section>
 
       <h1 style={{ fontSize: '2rem', textAlign: 'center', margin: '8px 0', color: 'var(--artemis-orange)' }}>
         Misión Global Artemis II
       </h1>
 
-      {/* Grid de gamificación comunitaria */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: '16px'
       }}>
         
-        {/* Rumbo Lunar */}
         <div style={{
           backgroundColor: '#0a0a0a',
           padding: '16px',

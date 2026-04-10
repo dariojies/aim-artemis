@@ -4,12 +4,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool, initDatabase } from './db.js';
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
+const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || '';
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 app.use(cors());
 app.use(express.json());
 
@@ -42,32 +44,59 @@ async function generateUniqueAstronautNumber(): Promise<string> {
 
 // --- ENDPOINTS DE AUTENTICACIÓN / REGISTRO ---
 
-app.post('/api/auth/register', async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) return res.status(400).json({ error: 'El teléfono es obligatorio' });
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) return res.status(400).json({ error: 'Falta credencial de Google' });
 
   try {
-    // 1. Ver si ya está en artemis_users
-    const existingArtemis = await pool.query('SELECT * FROM artemis_users WHERE phone_number = $1', [phone]);
+    // 1. Verificar el token de Google
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) return res.status(401).json({ error: 'Token inválido' });
+
+    const email = payload.email;
+    const name = payload.name || '';
+
+    // 2. Buscar o Crear en artemis_users
+    let artemisUser;
+    const existingArtemis = await pool.query('SELECT * FROM artemis_users WHERE email = $1', [email]);
+    
     if (existingArtemis.rowCount && existingArtemis.rowCount > 0) {
-      return res.json(existingArtemis.rows[0]);
+      artemisUser = existingArtemis.rows[0];
+    } else {
+      // Registrar nuevo
+      const astronautNumber = await generateUniqueAstronautNumber();
+      // Intentar vincular con tabla global users para guardar el UUID original si existe por email
+      const globalRes = await pool.query('SELECT user_id FROM users WHERE email = $1 LIMIT 1', [email]);
+      const userId = globalRes.rowCount && globalRes.rowCount > 0 ? globalRes.rows[0].user_id : null;
+
+      const insertRes = await pool.query(
+        'INSERT INTO artemis_users (email, full_name, astronaut_number, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+        [email, name, astronautNumber, userId]
+      );
+      artemisUser = insertRes.rows[0];
     }
 
-    // 2. Ver si está en la tabla global users
-    const existingGlobal = await pool.query('SELECT user_id FROM users WHERE phone = $1 LIMIT 1', [phone]);
-    const userId = existingGlobal.rowCount && existingGlobal.rowCount > 0 ? existingGlobal.rows[0].user_id : null;
+    // 3. Determinar el ROL (Superadmin si está en la tabla global users con dev_role)
+    let role: 'user' | 'superadmin' = 'user';
+    const devRoleRes = await pool.query('SELECT dev_role FROM users WHERE email = $1 LIMIT 1', [email]);
+    
+    if (devRoleRes.rowCount && devRoleRes.rowCount > 0) {
+      if (devRoleRes.rows[0].dev_role === 'superadmin') {
+        role = 'superadmin';
+      }
+    }
 
-    // 3. Generar número de astronauta y registrar
-    const astronautNumber = await generateUniqueAstronautNumber();
-    const result = await pool.query(
-      'INSERT INTO artemis_users (user_id, astronaut_number, phone_number) VALUES ($1, $2, $3) RETURNING *',
-      [userId, astronautNumber, phone]
-    );
-
-    res.json(result.rows[0]);
+    res.json({
+      ...artemisUser,
+      role
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error en el servidor durante el registro' });
+    console.error("Error validando Google Token:", err);
+    res.status(500).json({ error: 'Error de autenticación con Google' });
   }
 });
 
@@ -77,7 +106,7 @@ app.get('/api/auth/search-astronaut', async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT id, astronaut_number, phone_number FROM artemis_users WHERE astronaut_number LIKE $1 OR phone_number LIKE $1 LIMIT 5",
+      "SELECT id, astronaut_number, email FROM artemis_users WHERE astronaut_number LIKE $1 OR email LIKE $1 LIMIT 5",
       [`%${q}%`]
     );
     res.json(result.rows);

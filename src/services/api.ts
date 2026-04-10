@@ -11,6 +11,15 @@ export const artemisApi = {
     return res.json();
   },
 
+  loginWithGoogle: async (credential: string) => {
+    const res = await fetch(`${API_BASE}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential })
+    });
+    return res.json();
+  },
+
   searchAstronaut: async (query: string) => {
     const res = await fetch(`${API_BASE}/auth/search-astronaut?q=${encodeURIComponent(query)}`);
     return res.json();
