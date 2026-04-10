@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { QrCode } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useAuth } from '../core/AuthContext';
 import { useEffect, useState } from 'react';
 import { artemisApi } from '../services/api';
@@ -14,6 +15,7 @@ export function Home() {
   const navigate = useNavigate();
   const { login, role } = useAuth();
   const [isIdentifying, setIsIdentifying] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState(window.location.href);
 
   // Redirección automática si ya está logueado
   useEffect(() => {
@@ -22,6 +24,8 @@ export function Home() {
   }, [role, navigate]);
 
   useEffect(() => {
+    setCurrentUrl(window.location.origin); // URL base para el QR
+    
     // Inicializar Google One Tap
     const initializeGoogle = () => {
       if (window.google) {
@@ -87,10 +91,23 @@ export function Home() {
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: '24px',
-        gap: '16px'
+        gap: '16px',
+        padding: '20px'
       }}>
-        <QrCode size={100} color="var(--cartoon-white)" opacity={0.5} />
-        {isIdentifying && <span>Buscando...</span>}
+        {isIdentifying ? (
+          <div className="animate-pulse">
+            <QrCode size={100} color="var(--artemis-orange)" />
+          </div>
+        ) : (
+          <QRCodeCanvas 
+            value={currentUrl} 
+            size={200}
+            bgColor={"transparent"}
+            fgColor={"#FFFFFF"}
+            level={"H"}
+            includeMargin={false}
+          />
+        )}
       </div>
 
       {/* Botón de respaldo por si el One Tap no sale automáticamente */}
