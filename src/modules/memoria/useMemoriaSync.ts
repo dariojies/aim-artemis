@@ -3,12 +3,7 @@ import { useAuth } from '../../core/AuthContext';
 import { artemisApi } from '../../services/api';
 import { socket } from '../../services/socket';
 
-// Tipos de mensajes que enviaremos a través del socket
-type MemoriaMessage = 
-  | { type: 'START_GAME'; payload: { sequence: string[], gridSize: number, difficulty: string, startTime: number } }
-  | { type: 'WIN_GAME'; payload: { endTime: number } }
-  | { type: 'RESET_GAME' };
-
+// Estado inicial del juego de memoria
 export interface MemoriaGameState {
   isActive: boolean;
   sequence: string[];
