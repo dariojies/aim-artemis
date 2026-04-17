@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../core/AuthContext';
 import { artemisApi } from '../../services/api';
+import { socket } from '../../services/socket';
 
-// Tipos de mensajes que enviaremos a través del canal
+// Tipos de mensajes que enviaremos a través del socket
 type MemoriaMessage = 
   | { type: 'START_GAME'; payload: { sequence: string[], gridSize: number, difficulty: string, startTime: number } }
   | { type: 'WIN_GAME'; payload: { endTime: number } }
-  | { type: 'RESET_GAME' }
-  | { type: 'PING' };
+  | { type: 'RESET_GAME' };
 
 export interface MemoriaGameState {
   isActive: boolean;
@@ -18,8 +18,6 @@ export interface MemoriaGameState {
   endTime: number | null;
   isWon: boolean;
 }
-
-const CHANNEL_NAME = 'artemis_memoria_sync';
 
 export function useMemoriaSync() {
   const { artemisUserId } = useAuth();
@@ -33,15 +31,15 @@ export function useMemoriaSync() {
     isWon: false
   });
 
-  const [channel, setChannel] = useState<BroadcastChannel | null>(null);
-
   useEffect(() => {
-    // Instanciar el canal (funciona cross-tab en el mismo navegador)
-    const bc = new BroadcastChannel(CHANNEL_NAME);
-    setChannel(bc);
+    if (!artemisUserId) return;
 
-    bc.onmessage = (event: MessageEvent<MemoriaMessage>) => {
-      const data = event.data;
+    // 1. Unirse a la sala privada del usuario
+    socket.emit('join_room', artemisUserId);
+
+    // 2. Escuchar actualizaciones sincronizadas
+    const handleSync = (data: { type: string, payload: any }) => {
+      console.log('Sincronización recibida por socket:', data);
       switch (data.type) {
         case 'START_GAME':
           setGameState({
@@ -76,16 +74,20 @@ export function useMemoriaSync() {
       }
     };
 
+    socket.on('memoria_sync', handleSync);
+
     return () => {
-      bc.close();
+      socket.off('memoria_sync', handleSync);
     };
-  }, []);
+  }, [artemisUserId]);
 
   const startGame = useCallback((sequence: string[], gridSize: number, difficulty: string) => {
-    if (!channel) return;
     const startTime = Date.now();
     const payload = { sequence, gridSize, difficulty, startTime };
-    channel.postMessage({ type: 'START_GAME', payload });
+    
+    // Emitir al servidor para otros dispositivos
+    socket.emit('memoria_action', { userId: artemisUserId, type: 'START_GAME', payload });
+
     setGameState({
       isActive: true,
       sequence,
@@ -95,12 +97,13 @@ export function useMemoriaSync() {
       endTime: null,
       isWon: false
     });
-  }, [channel]);
+  }, [artemisUserId]);
 
   const winGame = useCallback(async () => {
-    if (!channel) return;
     const endTime = Date.now();
-    channel.postMessage({ type: 'WIN_GAME', payload: { endTime } });
+    
+    // Emitir al servidor para otros dispositivos
+    socket.emit('memoria_action', { userId: artemisUserId, type: 'WIN_GAME', payload: { endTime } });
     
     setGameState(prev => {
       const newState = {
@@ -110,7 +113,7 @@ export function useMemoriaSync() {
         endTime
       };
 
-      // Si tenemos un usuario identificado, guardamos el tiempo de forma asíncrona
+      // Si tenemos un usuario identificado, guardamos el tiempo de forma asíncrona en DB
       if (artemisUserId && prev.startTime) {
         const diff = endTime - prev.startTime;
         artemisApi.saveMemoria(artemisUserId, diff).catch(e => console.error("Error saving memory time", e));
@@ -118,11 +121,11 @@ export function useMemoriaSync() {
 
       return newState;
     });
-  }, [channel, artemisUserId]);
+  }, [artemisUserId]);
 
   const resetGame = useCallback(() => {
-    if (!channel) return;
-    channel.postMessage({ type: 'RESET_GAME' });
+    socket.emit('memoria_action', { userId: artemisUserId, type: 'RESET_GAME' });
+    
     setGameState({
       isActive: false,
       sequence: [],
@@ -132,7 +135,7 @@ export function useMemoriaSync() {
       endTime: null,
       isWon: false
     });
-  }, [channel]);
+  }, [artemisUserId]);
 
   return {
     gameState,

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool, initDatabase } from './db.js';
@@ -9,6 +11,14 @@ import { OAuth2Client } from 'google-auth-library';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // En producción se podría restringir más
+    methods: ["GET", "POST"]
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 const GOOGLE_CLIENT_ID = (process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '').trim();
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -18,6 +28,28 @@ if (!GOOGLE_CLIENT_ID) {
 }
 app.use(cors());
 app.use(express.json());
+
+// --- LÓGICA DE SOCKET.IO ---
+io.on('connection', (socket) => {
+  console.log('Cliente conectado:', socket.id);
+
+  socket.on('join_room', (userId) => {
+    const room = `room_user_${userId}`;
+    socket.join(room);
+    console.log(`Socket ${socket.id} se unió a la sala: ${room}`);
+  });
+
+  socket.on('memoria_action', (data) => {
+    // data: { userId, type, payload }
+    const room = `room_user_${data.userId}`;
+    // Re-emitir a todos en la sala EXCEPTO al que lo envió (o a todos si es necesario)
+    socket.to(room).emit('memoria_sync', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado:', socket.id);
+  });
+});
 
 // Definir __dirname para ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -237,6 +269,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Servidor Artemis II corriendo en el puerto ${PORT}`);
 });
