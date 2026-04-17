@@ -94,11 +94,30 @@ export function ReceptorView() {
         </div>
       </div>
 
-      {!gameState.isActive && !gameState.isWon && (
+      {!gameState.isActive && !gameState.isWon && !gameState.isPreparing && (
         <div style={{ padding: '40px', border: '4px dashed var(--cartoon-outline)', borderRadius: '24px', backgroundColor: 'var(--space-medium)', textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: '1.5rem', opacity: 0.8 }} className="pulsing-text">
             📡 Esperando coordenadas del Visualizador...
           </p>
+        </div>
+      )}
+
+      {gameState.isPreparing && (
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          {gameState.countdown !== null ? (
+            <div className="fade-in">
+              <p style={{ fontSize: '1.5rem', marginBottom: '16px', color: 'var(--artemis-orange)' }}>TRANSMISIÓN EN...</p>
+              <div style={{ fontSize: '8rem', fontWeight: 'bold' }}>
+                {gameState.countdown > 0 ? gameState.countdown : '🚀'}
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '32px', backgroundColor: 'var(--space-medium)', borderRadius: '24px', border: '4px solid #005C8A', animation: 'pulse-soft 2s infinite' }}>
+              <h3 style={{ fontSize: '1.8rem', color: '#005C8A', marginBottom: '12px' }}>🛰️ ¡COORDENADAS RECIBIDAS!</h3>
+              <p style={{ fontSize: '1.2rem', margin: 0 }}>Esperando a que el Comandante inicie la secuencia...</p>
+              <p style={{ fontSize: '1rem', marginTop: '16px', opacity: 0.7 }}>Prepárate para la entrada de datos.</p>
+            </div>
+          )}
         </div>
       )}
 

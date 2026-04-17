@@ -6,7 +6,7 @@ type Mode = 'Satelite' | 'Nave';
 type Difficulty = 'fácil' | 'difícil';
 
 export function VisualizadorView() {
-  const { gameState, startGame, resetGame } = useMemoriaSync();
+  const { gameState, prepareGame, startCountdown, resetGame } = useMemoriaSync();
   const [elapsedTime, setElapsedTime] = useState('00:00');
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
@@ -31,11 +31,11 @@ export function VisualizadorView() {
     return seq;
   };
 
-  const handleStart = () => {
+  const handlePrepare = () => {
     if (!selectedMode || !selectedDifficulty) return;
     const size = selectedMode === 'Satelite' ? 3 : 5;
     const newSeq = generateSequence(selectedMode, selectedDifficulty);
-    startGame(newSeq, size, `${selectedMode} ${selectedDifficulty}`);
+    prepareGame(newSeq, size, `${selectedMode} ${selectedDifficulty}`);
   };
 
   // Cronómetro
@@ -59,8 +59,8 @@ export function VisualizadorView() {
     return () => clearInterval(interval);
   }, [gameState.isActive, gameState.isWon, gameState.startTime, gameState.endTime]);
 
-  // Pantalla de Selección
-  if (!gameState.isActive && !gameState.isWon) {
+  // Pantalla de Selección Inicial
+  if (!gameState.isActive && !gameState.isWon && !gameState.isPreparing) {
     return (
       <div style={{ textAlign: 'center', padding: '24px' }}>
         <h2 style={{ fontSize: '2.5rem', marginBottom: '32px' }}>Configuración de Misión</h2>
@@ -110,17 +110,54 @@ export function VisualizadorView() {
             </div>
           )}
 
-          {/* Botón Iniciar */}
+          {/* Botón Preparar */}
           {selectedMode && selectedDifficulty && (
             <button 
               className="btn-cartoon pulse"
-              onClick={handleStart}
+              onClick={handlePrepare}
               style={{ padding: '24px', fontSize: '1.5rem', marginTop: '16px', backgroundColor: '#005C8A' }}
             >
-              <Play style={{ display: 'inline', marginRight: '8px' }} /> Iniciar Transmisión
+              <Play style={{ display: 'inline', marginRight: '8px' }} /> Transmitir Coordenadas
             </button>
           )}
         </div>
+      </div>
+    );
+  }
+
+  // Pantalla de Preparación / Cuenta Atrás
+  if (gameState.isPreparing) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '24px' }}>Misión: {gameState.difficulty}</h2>
+        
+        {gameState.countdown !== null ? (
+          <div className="fade-in">
+            <p style={{ fontSize: '1.5rem', marginBottom: '16px', color: 'var(--artemis-orange)' }}>INICIANDO EN...</p>
+            <div style={{ fontSize: '8rem', fontWeight: 'bold', animation: 'pulse-soft 1s infinite' }}>
+              {gameState.countdown > 0 ? gameState.countdown : '🚀'}
+            </div>
+          </div>
+        ) : (
+          <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px', alignItems: 'center' }}>
+            <div style={{ padding: '24px', backgroundColor: 'var(--space-medium)', borderRadius: '24px', border: '4px solid var(--artemis-orange)' }}>
+              <p style={{ fontSize: '1.3rem', margin: 0 }}>📡 Coordenadas transmitidas al Receptor.</p>
+              <p style={{ fontSize: '1.1rem', marginTop: '8px', opacity: 0.8 }}>Prepárate para la ignición.</p>
+            </div>
+            
+            <button 
+              className="btn-cartoon pulse"
+              onClick={startCountdown}
+              style={{ padding: '32px', fontSize: '2rem', backgroundColor: '#1F6A40' }}
+            >
+              ¡INICIAR CUENTA ATRÁS!
+            </button>
+
+            <button className="btn-cartoon" onClick={resetGame} style={{ backgroundColor: '#b33939', fontSize: '1rem', padding: '12px 24px' }}>
+              Abortar Configuración
+            </button>
+          </div>
+        )}
       </div>
     );
   }
