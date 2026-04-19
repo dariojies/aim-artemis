@@ -104,37 +104,58 @@ export function VisualizadorView() {
           
           {/* Paso 0: Participante (Solo Superadmin) */}
           {role === 'superadmin' && (
-            <div style={{ textAlign: 'left', backgroundColor: 'var(--space-medium)', padding: '20px', borderRadius: '20px', border: '3px solid var(--cartoon-outline)' }}>
-              <p style={{ fontWeight: 'bold', marginBottom: '12px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={20} /> Asignar Participante:
+            <div style={{ 
+              backgroundColor: 'var(--space-medium)', 
+              padding: '24px', 
+              borderRadius: '24px', 
+              border: '4px dashed var(--cartoon-outline)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+              position: 'relative'
+            }}>
+              <p style={{ fontWeight: 'bold', fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={20} /> Nº de Astronauta (4 cifras):
               </p>
               
               {!selectedParticipant ? (
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'relative' }}>
-                    <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-                    <input 
-                      type="text"
-                      className="input-cartoon"
-                      placeholder="Buscar por número o email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      style={{ paddingLeft: '40px', width: '100%', marginBottom: 0 }}
-                    />
-                  </div>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                  <input 
+                    type="text"
+                    maxLength={4}
+                    className="input-cartoon"
+                    placeholder="Ej: 4356"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ 
+                      fontSize: '1.5rem', 
+                      padding: '12px', 
+                      width: '200px', 
+                      textAlign: 'center',
+                      borderRadius: '12px',
+                      border: '4px solid var(--cartoon-outline)',
+                      backgroundColor: 'var(--cartoon-white)',
+                      color: 'var(--space-dark)',
+                      fontWeight: 'bold',
+                      marginBottom: 0
+                    }}
+                  />
 
                   {searchResults.length > 0 && (
                     <div style={{
                       position: 'absolute',
                       top: '100%',
-                      left: 0,
-                      right: 0,
-                      backgroundColor: 'var(--cartoon-white)',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '240px',
+                      backgroundColor: 'var(--space-light)',
                       borderRadius: '12px',
                       border: '2px solid var(--cartoon-outline)',
                       marginTop: '8px',
                       zIndex: 10,
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                     }}>
                       {searchResults.map((user) => (
                         <div 
@@ -145,40 +166,53 @@ export function VisualizadorView() {
                             setSearchResults([]);
                           }}
                           style={{
-                            padding: '10px 16px',
-                            color: 'var(--space-dark)',
+                            padding: '12px 16px',
                             cursor: 'pointer',
-                            borderBottom: '1px solid #eee',
+                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                            textAlign: 'left',
                             display: 'flex',
-                            justifyContent: 'space-between'
+                            gap: '10px',
+                            alignItems: 'center'
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <span style={{ fontWeight: 'bold' }}>#{user.astronaut_number}</span>
-                          <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>{user.email}</span>
+                          <span style={{ fontWeight: 'bold', color: 'var(--artemis-orange)' }}>🚀 #{user.astronaut_number}</span>
+                          <span style={{ fontSize: '0.8rem', opacity: 0.6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
                         </div>
                       ))}
                     </div>
                   )}
-                  {isSearching && <p style={{ fontSize: '0.8rem', marginTop: '4px', opacity: 0.7 }}>Buscando...</p>}
+                  {isSearching && <small style={{ marginTop: '8px', opacity: 0.7 }}>Buscando...</small>}
                 </div>
               ) : (
                 <div style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  justifyContent: 'space-between',
+                  gap: '16px',
                   backgroundColor: 'var(--artemis-orange)',
-                  padding: '10px 16px',
-                  borderRadius: '12px',
-                  border: '2px solid white'
+                  padding: '12px 24px',
+                  borderRadius: '16px',
+                  border: '4px solid var(--cartoon-outline)',
+                  boxShadow: '4px 4px 0px var(--cartoon-outline)'
                 }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Identificado: #{selectedParticipant.name}</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '1.3rem' }}>Astronauta: #{selectedParticipant.name}</span>
                   <button 
                     onClick={() => setSelectedParticipant(null)}
-                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}
+                    style={{ 
+                      background: 'var(--space-dark)', 
+                      border: '2px solid var(--cartoon-outline)', 
+                      color: 'white', 
+                      cursor: 'pointer', 
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
                   >
-                    <X size={20} />
+                    <X size={18} />
                   </button>
                 </div>
               )}
