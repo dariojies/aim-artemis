@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMemoriaSync } from './useMemoriaSync';
-import { Play, Search, User, X } from 'lucide-react';
+import { Play, User, X } from 'lucide-react';
 import { useAuth } from '../../core/AuthContext';
 import { artemisApi } from '../../services/api';
 
