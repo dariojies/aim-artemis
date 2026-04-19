@@ -92,6 +92,11 @@ export function ReceptorView() {
         <div style={{ fontSize: '3rem', fontWeight: 'bold', color: gameState.isWon ? '#1F6A40' : 'var(--artemis-orange)', fontFamily: 'monospace' }}>
           {elapsedTime}
         </div>
+        {gameState.participantName && (
+          <div style={{ marginTop: '8px', fontSize: '1rem', color: 'var(--cartoon-white)', opacity: 0.8, backgroundColor: 'rgba(255,165,0,0.2)', padding: '4px 12px', borderRadius: '20px', display: 'inline-block' }}>
+            Participante: <strong>#{gameState.participantName}</strong>
+          </div>
+        )}
       </div>
 
       {!gameState.isActive && !gameState.isWon && !gameState.isPreparing && (

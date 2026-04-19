@@ -1,15 +1,44 @@
 import { useState, useEffect } from 'react';
 import { useMemoriaSync } from './useMemoriaSync';
-import { Play } from 'lucide-react';
+import { Play, Search, User, X } from 'lucide-react';
+import { useAuth } from '../../core/AuthContext';
+import { artemisApi } from '../../services/api';
 
 type Mode = 'Satelite' | 'Nave';
 type Difficulty = 'fácil' | 'difícil';
 
 export function VisualizadorView() {
+  const { role } = useAuth();
   const { gameState, prepareGame, startCountdown, resetGame } = useMemoriaSync();
   const [elapsedTime, setElapsedTime] = useState('00:00');
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
+
+  // Estados para búsqueda de participante (Superadmin)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedParticipant, setSelectedParticipant] = useState<{ id: number, name: string } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      if (searchTerm.length > 1) {
+        setIsSearching(true);
+        try {
+          const results = await artemisApi.searchAstronaut(searchTerm);
+          setSearchResults(results);
+        } catch (err) {
+          console.error("Error buscando astronauta:", err);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
 
   // Generador de secuencia rándom según modo y dificultad
   const generateSequence = (mode: Mode, diff: Difficulty) => {
@@ -35,7 +64,13 @@ export function VisualizadorView() {
     if (!selectedMode || !selectedDifficulty) return;
     const size = selectedMode === 'Satelite' ? 3 : 5;
     const newSeq = generateSequence(selectedMode, selectedDifficulty);
-    prepareGame(newSeq, size, `${selectedMode} ${selectedDifficulty}`);
+    prepareGame(
+      newSeq, 
+      size, 
+      `${selectedMode} ${selectedDifficulty}`,
+      selectedParticipant?.id,
+      selectedParticipant?.name
+    );
   };
 
   // Cronómetro
@@ -66,6 +101,90 @@ export function VisualizadorView() {
         <h2 style={{ fontSize: '2.5rem', marginBottom: '32px' }}>Configuración de Misión</h2>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', maxWidth: '500px', margin: '0 auto' }}>
+          
+          {/* Paso 0: Participante (Solo Superadmin) */}
+          {role === 'superadmin' && (
+            <div style={{ textAlign: 'left', backgroundColor: 'var(--space-medium)', padding: '20px', borderRadius: '20px', border: '3px solid var(--cartoon-outline)' }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '12px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={20} /> Asignar Participante:
+              </p>
+              
+              {!selectedParticipant ? (
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                    <input 
+                      type="text"
+                      className="input-cartoon"
+                      placeholder="Buscar por número o email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ paddingLeft: '40px', width: '100%', marginBottom: 0 }}
+                    />
+                  </div>
+
+                  {searchResults.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'var(--cartoon-white)',
+                      borderRadius: '12px',
+                      border: '2px solid var(--cartoon-outline)',
+                      marginTop: '8px',
+                      zIndex: 10,
+                      overflow: 'hidden'
+                    }}>
+                      {searchResults.map((user) => (
+                        <div 
+                          key={user.id}
+                          onClick={() => {
+                            setSelectedParticipant({ id: user.id, name: user.astronaut_number });
+                            setSearchTerm('');
+                            setSearchResults([]);
+                          }}
+                          style={{
+                            padding: '10px 16px',
+                            color: 'var(--space-dark)',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #eee',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <span style={{ fontWeight: 'bold' }}>#{user.astronaut_number}</span>
+                          <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>{user.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {isSearching && <p style={{ fontSize: '0.8rem', marginTop: '4px', opacity: 0.7 }}>Buscando...</p>}
+                </div>
+              ) : (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  backgroundColor: 'var(--artemis-orange)',
+                  padding: '10px 16px',
+                  borderRadius: '12px',
+                  border: '2px solid white'
+                }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Identificado: #{selectedParticipant.name}</span>
+                  <button 
+                    onClick={() => setSelectedParticipant(null)}
+                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Paso 1: Modo */}
           <div>
             <p style={{ fontWeight: 'bold', marginBottom: '16px', fontSize: '1.2rem' }}>1. Selecciona el Sistema:</p>

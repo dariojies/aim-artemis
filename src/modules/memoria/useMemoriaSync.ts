@@ -14,6 +14,8 @@ export interface MemoriaGameState {
   isWon: boolean;
   isPreparing: boolean; // Hemos recibido coordenadas pero no hemos empezado
   countdown: number | null; // 3, 2, 1...
+  participantId: number | null;
+  participantName: string | null;
 }
 
 // Utilidad para generar el "pitido" de inicio
@@ -49,7 +51,9 @@ export function useMemoriaSync() {
     endTime: null,
     isWon: false,
     isPreparing: false,
-    countdown: null
+    countdown: null,
+    participantId: null,
+    participantName: null
   });
 
   const countdownInterval = useRef<number | null>(null);
@@ -73,6 +77,8 @@ export function useMemoriaSync() {
             sequence: data.payload.sequence,
             gridSize: data.payload.gridSize,
             difficulty: data.payload.difficulty,
+            participantId: data.payload.participantId || null,
+            participantName: data.payload.participantName || null,
             countdown: null
           }));
           break;
@@ -109,7 +115,9 @@ export function useMemoriaSync() {
             endTime: null,
             isWon: false,
             isPreparing: false,
-            countdown: null
+            countdown: null,
+            participantId: null,
+            participantName: null
           });
           break;
       }
@@ -143,8 +151,8 @@ export function useMemoriaSync() {
     }, 1000);
   };
 
-  const prepareGame = useCallback((sequence: string[], gridSize: number, difficulty: string) => {
-    const payload = { sequence, gridSize, difficulty };
+  const prepareGame = useCallback((sequence: string[], gridSize: number, difficulty: string, participantId?: number | null, participantName?: string | null) => {
+    const payload = { sequence, gridSize, difficulty, participantId, participantName };
     socket.emit('memoria_action', { userId: artemisUserId, type: 'PREPARE_GAME', payload });
     setGameState(prev => ({
       ...prev,
@@ -152,6 +160,8 @@ export function useMemoriaSync() {
       sequence,
       gridSize,
       difficulty,
+      participantId: participantId || null,
+      participantName: participantName || null,
       isWon: false,
       countdown: null
     }));
@@ -188,9 +198,14 @@ export function useMemoriaSync() {
         isWon: true,
         endTime
       };
-      if (artemisUserId && prev.startTime) {
+      if (prev.startTime) {
         const diff = endTime - prev.startTime;
-        artemisApi.saveMemoria(artemisUserId, diff).catch(e => console.error("Error saving memory time", e));
+        // Si hay un participante asignado, guardamos para él. Si no, para el admin/usuario logueado.
+        const targetUserId = prev.participantId || artemisUserId;
+        
+        if (targetUserId) {
+          artemisApi.saveMemoria(targetUserId, diff).catch(e => console.error("Error saving memory time", e));
+        }
       }
       return newState;
     });
@@ -209,7 +224,9 @@ export function useMemoriaSync() {
       endTime: null,
       isWon: false,
       isPreparing: false,
-      countdown: null
+      countdown: null,
+      participantId: null,
+      participantName: null
     });
   }, [artemisUserId]);
 
